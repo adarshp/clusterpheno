@@ -107,3 +107,22 @@ class Process(object):
         """ Generate events on cluster."""
         with cd(self.directory):
             sp.call(['qsub', 'generate_events.pbs'], stdout = open(os.devnull, 'w')) 
+
+    def write_pbs_scripts(self, parser, nruns):
+        with open(parser.get('PBS Templates', 'generate_script'), 'r') as f:
+            string = f.read()
+        with open(self.directory+'/generate_events.pbs', 'w') as f:
+            f.write(string.format(jobname = self.name,
+                                  username = parser.get('Cluster', 'username'),
+                                  email = parser.get('Cluster', 'email'),
+                                  group_list = parser.get('Cluster', 'group_list'),
+                                  nruns = str(nruns),
+                                  cput = str(30*nruns),
+                                  walltime = str(60*nruns),
+                                  cwd = os.getcwd(),
+                                  mg5_process_dir = self.directory))
+    def make_feature_array(self):
+        with cd(self.directory+'/MakeFeatureArray/Build'):
+            devnull = open(os.devnull, 'w')
+            sp.call('./analyze.sh', shell = True,
+                    stdout = devnull)

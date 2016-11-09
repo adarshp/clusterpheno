@@ -8,6 +8,11 @@ import untangle
 from tqdm import tqdm
 import multiprocessing as mp
 
+class Counter:
+    def __init__(self, counter_object):
+        cdata = counter_object.cdata.split('\n')
+        self.name = cdata[1].split('\"')[1]
+        self.nevents = int(cdata[2].split(' ')[0])
 """ Some helper functions. """
 
 def convert_SAF_to_XML(filename):
