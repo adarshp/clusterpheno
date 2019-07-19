@@ -1,12 +1,15 @@
 #!usr/bin/env python
-import os, re
+import sys, os, re
 import numpy as np
 import pandas as pd
 import itertools as it
 import contextlib
+sys.path.insert(0,'/extra/huayangs/work/untangle')
+sys.path.insert(0,'/extra/huayangs/work/pathos')
+sys.path.insert(0,'/extra/huayangs/work/tqdm')
 import untangle
 from tqdm import tqdm
-import multiprocessing as mp
+from pathos.multiprocessing import ProcessingPool as Pool
 
 class Counter:
     def __init__(self, counter_object):
@@ -28,7 +31,7 @@ def convert_SAF_to_XML(filename):
 
     with open(filename, 'r') as f:
         result = [convert_to_XML_line(line) for line in f]
-    
+
     xml_filename = filename.split('.')[0]+'.xml'
 
     with open(xml_filename, 'w') as f:
@@ -61,9 +64,9 @@ def modify_file(filepath, line_modification_function):
         lines = [line_modification_function(line) for line in f.readlines()]
     with open(filepath, 'w') as f: [f.write(line) for line in lines]
 
-def do_parallel(function, list, ncores = 12):
-    p = mp.Pool(ncores)
-    for _ in tqdm(p.imap_unordered(function, list), total = len(list)):
+def do_parallel(function, list, ncores = 28):
+    p = Pool(ncores)
+    for _ in tqdm(p.uimap(function, list), total = len(list)):
         pass
 
 def _change_directory(destination_directory):
@@ -87,6 +90,6 @@ cd = contextlib.contextmanager(_change_directory)
     Parameters
     ----------
     destination_directory : string
-        The directory to temporarily change the working directory to. 
+        The directory to temporarily change the working directory to.
 
     """

@@ -6,7 +6,7 @@ from helpers import *
 class Process(object):
     """ A template for a particle collision process."""
     def __init__(
-            self, name, model, decay_channel, 
+            self, name, model, decay_channel,
             mg5_generation_syntax, energy, index):
 
         """ Initialize a new instance of Process with the following parameters:
@@ -14,7 +14,7 @@ class Process(object):
         Parameters
         ----------
         name : str
-            The name of the process, e.g. 'A_HZ', 'tt', etc. 
+            The name of the process, e.g. 'A_HZ', 'tt', etc.
         model : str
             The name of the model for MadGraph to import while generating the
             process. For example - '2HDM_HEFT', 'sm', etc.
@@ -34,7 +34,7 @@ class Process(object):
         self.energy = str(energy)+'_TeV'
         self.index = str(index)
 
-        self.common_path = '/'.join([self.process_type()+'s', self.name, 
+        self.common_path = '/'.join([self.process_type()+'s', self.name,
                                      self.decay_channel, self.energy, self.index])
         self.directory = '/'.join(['Events', self.common_path])
 
@@ -51,37 +51,18 @@ class Process(object):
             f.write('import model {}\n'.format(self.model))
             f.write(self.mg5_generation_syntax+'\n')
             f.write('output '+self.directory)
-        sp.call(['./'+relative_mg5_path+'/bin/mg5_aMC', proc_card], stdout = open(os.devnull, 'w'))
+        sp.call(['python',relative_mg5_path+'/bin/mg5_aMC', proc_card], stdout = open(os.devnull, 'w'))
 
     def process_type(self):
         if self.model == 'sm': return 'Background'
         else: return 'Signal'
 
-    def copy_cards(self, run_card, pythia_card, delphes_card): 
+    def copy_cards(self, run_card, pythia_card, delphes_card):
         """ Copy the run, pythia, and delphes cards to the process directory."""
         destination = self.directory+'/Cards/'
         sh.copy(run_card, destination+'run_card.dat')
         sh.copy(pythia_card, destination+'pythia_card.dat')
         sh.copy(delphes_card, destination+'delphes_card.dat')
-
-    def write_pbs_generation_script(self, nruns, clusterconfig):
-        with open('submit.pbs', 'w') as f:
-            f.write(myClusterConfig.pbs_script_template.format(
-                    jobname = self.name,
-                    email = myClusterConfig.email,
-                    group_list = myClusterConfig.group_list,
-                    username = myClusterConfig.username,
-                    cput = str(30*nruns),
-                    walltime = str(60*nruns),
-                    mg5_process_dir = self.directory,
-                    nruns = str(nruns),
-                  ))
-    
-    def setup_for_generation(self, nruns, nevents):
-        with cd(self.directory):
-            self.write_pbs_script(nruns)
-            modify_file('Cards/run_card.dat',set_beam_energy) 
-            modify_file('Cards/run_card.dat', lambda x: re.sub(r'\d* = nev', str(nevents)+" = nev", x))
 
     def generate_events_locally(self, nruns = 1, nevents = 10000):
         """ Generate events on your local computer.
@@ -106,9 +87,9 @@ class Process(object):
     def generate_events(self):
         """ Generate events on cluster."""
         with cd(self.directory):
-            sp.call(['qsub', 'generate_events.pbs'], stdout = open(os.devnull, 'w')) 
+            sp.call(['qsub', 'generate_events.pbs'], stdout = open(os.devnull, 'w'))
 
-    def write_pbs_scripts(self, parser, nruns):
+    def write_pbs_script(self, parser, nruns):
         with open(parser.get('PBS Templates', 'generate_script'), 'r') as f:
             string = f.read()
         with open(self.directory+'/generate_events.pbs', 'w') as f:
